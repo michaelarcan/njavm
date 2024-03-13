@@ -1,0 +1,91 @@
+/*
+    Script by Michael Arcan ©2024
+*/
+
+// Parameter you should set before run!
+celestialID = 123456789
+maxLevel = 40
+skipClearAllConstructionQueues = false
+
+// Don't change as of here
+cel, err = GetCelestial(celestialID)
+if err != nil {
+    LogError(err)
+    return
+}
+
+// Get update of LfBuildings
+lfb, err = cel.GetLfBuildings()
+if err != nil {
+    LogError(err)
+    return
+}
+
+// It is not possible to query the Queue in NJAVM so to make sure, we don't add it double we clear the Queues of all Celestials for the Bot first.
+if !skipClearAllConstructionQueues {
+    ClearAllConstructionQueues()    
+}
+
+// Get the Construction of LfBuildings and skip the level if it is currently under construction.
+buildingID, buildingCountdown, researchID, researchCountdown, lfBuildingID, lfBuildingCountdown, lfResearchID, lfResearchCountdown = ConstructionsBeingBuiltLf(cel.GetID())
+
+bid1 = RESIDENTIALSECTOR - 10000
+bid2 = BIOSPHEREFARM - 10000
+
+
+// LifeformType independency.
+switch (lfb.LifeformType) {
+    // NoneLfType
+    case 0:
+        LogError("No LifeformType selected")
+        return
+    // Humans
+	case 1:
+	    bid1 += 10000
+	    bid2 += 10000
+	// Rocktal
+	case 2:
+	    bid1 += 20000
+	    bid2 += 20000
+	// Mechas
+	case 3:
+	    bid1 += 30000
+	    bid2 += 30000
+	// Kaelesh
+	case 4:
+		bid1 += 40000
+	    bid2 += 40000
+}
+
+// Struct Members couldn't be assigned. For example lfb.ResidentialSecotr = 12 is not possible in NJAVM! So we assign a Variable which we increment in the Loop lateron.
+b1 = lfb.ByID(bid1)
+b2 = lfb.ByID(bid2)
+
+
+// Skip for Level if it is currently under construction
+if lfBuildingID == bid1 {
+    b1++
+}
+
+// Skip for Level if it is currently under construction
+if lfBuildingID == bid2 {
+    b2++
+}
+
+for {
+    // Check if Max Level has been Reached for both LfBuildings.
+    if b1 >= maxLevel && b2 >= maxLevel {
+        break
+    }
+    if b1 < b2 {
+        b1++
+        // RESIDENTIALSECTOR
+        LogInfo("Add ", bid1, b1)
+        AddItemToQueue(cel.GetID(), bid1, 0)
+    } else {
+        b2++
+        // BIOSPHEREFARM
+        LogInfo("Add ", bid2, b2)
+        AddItemToQueue(cel.GetID(), bid2, 0) 
+    }
+}
